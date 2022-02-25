@@ -21,7 +21,6 @@ class MainActivity : AppCompatActivity(), RecyclerViewClickListener {
     private lateinit var adapter: NoteAdapter
     private var db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
-    // Todo Create a specific Object class if you want
     private val noteCollectionRef = Firebase.firestore.collection("notes")
     private val dbNotes = FirebaseDatabase.getInstance().getReference("notes")
 
@@ -36,26 +35,7 @@ class MainActivity : AppCompatActivity(), RecyclerViewClickListener {
         adapter = NoteAdapter(noteArrayList, this)
         recyclerView.adapter = adapter
 
-        buttonAddNote.setOnClickListener {
-            val noteDetail = inputNotesText.text.toString()
-            val noteId = dbNotes.push().key
-            val note = Note(noteDetail, noteId)
-            saveNotes(note)
-            inputNotesText.setText("")
-            inputNotesId.setText("")
-        }
-
-//        buttonUpdate.setOnClickListener {
-//            val oldNote = getOldNote()
-//            val newNoteMap = getNewNoteMap()
-//            updateNote(oldNote, newNoteMap)
-//        }
-//
-//        buttonDelete.setOnClickListener {
-//            val note = getOldNote()
-//            deleteNote(note)
-//        }
-
+        clickEvents()
         firebaseEventChangeListeners()
     }
 
@@ -65,46 +45,30 @@ class MainActivity : AppCompatActivity(), RecyclerViewClickListener {
         return Note(noteDetail, id)
     }
 
-//    private fun onItemSelected(note: Note) {
-//        // text View -> note.text
-//        // Id text view -> note.id
-//    }
 
     private fun firebaseEventChangeListeners() {
-        db.collection("notes").addSnapshotListener(object : EventListener<QuerySnapshot> {
-            override fun onEvent(value: QuerySnapshot?, error: FirebaseFirestoreException?) {
-                if (error != null) {
-                    Log.e("Firestore Error", error.message.toString())
-                    return
-                }
-//                noteArrayList.clear()
-                value?.let {
-                    for (dc: DocumentChange in value.documentChanges) {
-                        if (dc.type == DocumentChange.Type.ADDED) {
-                            noteArrayList.add(dc.document.toObject(Note::class.java))
+        db.collection("notes").addSnapshotListener { value, e ->
+            value?.let { nnValue ->
+                noteArrayList.clear()
+                nnValue.forEachIndexed { index, document ->
+                    document?.let { nnDocument ->
+                        val noteId = nnDocument.getString("id")
+                        val note = nnDocument.getString("noteDetail")
+                        note?.let { nnNote ->
+                            Log.d("TAG", "$nnNote")
+                            if (noteArrayList.size > index) {
+                                noteArrayList[index] = Note(nnNote, noteId)
+                            } else {
+                                noteArrayList.add(Note(nnNote, noteId))
+                            }
+
                         }
                     }
-                    adapter.submitList(noteArrayList)
                 }
+                adapter.submitList(noteArrayList?.toMutableList())
             }
-        })
+        }
     }
-
-//    private fun realtimeUpdates() {
-//        noteCollectionRef.addSnapshotListener { querySnapshot, firebaseFirestoreException ->
-//            firebaseFirestoreException?.let {
-//                Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
-//                return@addSnapshotListener
-//            }
-//            querySnapshot?.let {
-//                val stringBuilder = StringBuilder()
-//                for (document in it) {
-//                    val note = document.toObject<Note>()
-//                    stringBuilder.append("$note\n")
-//                }
-//            }
-//        }
-//    }
 
     private fun saveNotes(note: Note) = CoroutineScope(Dispatchers.IO).launch {
         try {
@@ -177,7 +141,6 @@ class MainActivity : AppCompatActivity(), RecyclerViewClickListener {
                 try {
                     noteCollectionRef.document(document.id).delete().await()
                     withContext(Dispatchers.Main) {
-                        firebaseEventChangeListeners()
                         Toast.makeText(this@MainActivity, "Deleted Successfully", Toast.LENGTH_LONG)
                             .show()
                     }
@@ -193,6 +156,33 @@ class MainActivity : AppCompatActivity(), RecyclerViewClickListener {
                     .show()
             }
         }
+    }
+
+    private fun clickEvents() {
+        buttonAddNote.setOnClickListener {
+            val noteDetail = inputNotesText.text.toString()
+            val noteId = dbNotes.push().key
+            val note = Note(noteDetail, noteId)
+            saveNotes(note)
+            inputNotesText.setText("")
+            inputNotesId.setText("")
+        }
+
+        buttonUpdate.setOnClickListener {
+            val oldNote = getOldNote()
+            val newNoteMap = getNewNoteMap()
+            updateNote(oldNote, newNoteMap)
+            inputNotesText.setText("")
+            inputNotesId.setText("")
+        }
+
+        buttonDelete.setOnClickListener {
+            val note = getOldNote()
+            deleteNote(note)
+            inputNotesText.setText("")
+            inputNotesId.setText("")
+        }
+
     }
 
     override fun onRecyclerViewItemClicked(note: Note) {

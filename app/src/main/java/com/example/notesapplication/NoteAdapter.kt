@@ -28,9 +28,9 @@ class NoteAdapter(
         }
     }
 
-    override fun getItemCount(): Int {
-        return noteList.size
-    }
+//    override fun getItemCount(): Int {
+//        return noteList.size
+//    }
 
     class ViewHolder(itemView : View, listener: RecyclerViewClickListener): RecyclerView.ViewHolder(itemView) {
         val noteDetail : TextView = itemView.findViewById(R.id.notesContent)
