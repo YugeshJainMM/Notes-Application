@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.activity_main.view.*
 
 class NoteAdapter(
-    private var noteList: ArrayList<Note>,
+    private var noteList: List<Note>,
     private val recyclerViewClickListener: RecyclerViewClickListener
 //    private val onItemSelected: (note : Note) -> Unit,
     ): ListAdapter<Note, NoteAdapter.ViewHolder>(DiffUtil()) {
