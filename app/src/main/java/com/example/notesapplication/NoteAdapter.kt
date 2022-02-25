@@ -8,25 +8,23 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.activity_main.view.*
 
-class NoteAdapter(private val noteList: ArrayList<Note>): ListAdapter<Note, NoteAdapter.ViewHolder>(DiffUtil()) {
-
-    private lateinit var mListener: RecyclerViewClickListener
-
-
-    fun setOnItemClickListener(listener: RecyclerViewClickListener){
-        mListener = listener
-    }
+class NoteAdapter(
+    private var noteList: ArrayList<Note>,
+    private val recyclerViewClickListener: RecyclerViewClickListener
+//    private val onItemSelected: (note : Note) -> Unit,
+    ): ListAdapter<Note, NoteAdapter.ViewHolder>(DiffUtil()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.note_item, parent, false)
-        return ViewHolder(itemView, mListener)
+        return ViewHolder(itemView, recyclerViewClickListener)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val note : Note = noteList[position]
+//        onItemSelected(note)
         holder.noteDetail.text = note.noteDetail
         holder.noteDetail.setOnClickListener {
-            mListener.onRecyclerViewItemClicked(note)
+            recyclerViewClickListener.onRecyclerViewItemClicked(note)
         }
     }
 

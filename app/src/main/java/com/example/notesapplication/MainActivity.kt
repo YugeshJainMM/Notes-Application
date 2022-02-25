@@ -4,8 +4,6 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.database.FirebaseDatabase
@@ -17,15 +15,16 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(),RecyclerViewClickListener {
+
     private lateinit var recyclerView: RecyclerView
     private lateinit var noteArrayList: ArrayList<Note>
     private lateinit var adapter: NoteAdapter
     private lateinit var db: FirebaseFirestore
 
+    // Todo Create a specific Object class if you want
     private val noteCollectionRef = Firebase.firestore.collection("notes")
     private val dbNotes = FirebaseDatabase.getInstance().getReference("notes")
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,16 +34,8 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
 
         noteArrayList = arrayListOf()
-        adapter = NoteAdapter(noteArrayList)
+        adapter = NoteAdapter(noteArrayList,this)
         recyclerView.adapter = adapter
-
-
-        adapter.setOnItemClickListener(object : RecyclerViewClickListener{
-            override fun onRecyclerViewItemClicked(note: Note) {
-                inputNotesId.setText(note.id)
-                inputNotesText.setText(note.noteDetail)
-            }
-        })
 
         buttonAddNote.setOnClickListener {
             val noteDetail = inputNotesText.text.toString()
@@ -75,6 +66,11 @@ class MainActivity : AppCompatActivity() {
         val noteDetail = inputNotesText.text.toString()
         val id = inputNotesId.text.toString()
         return Note(noteDetail, id)
+    }
+
+    private fun onItemSelected(note: Note){
+        // text View -> note.text
+        // Id text view -> note.id
     }
 
     private fun eventChangeListner() {
@@ -189,5 +185,10 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, "No note matched the query.", Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    override fun onRecyclerViewItemClicked(note: Note) {
+        inputNotesId.setText(note.id)
+        inputNotesText.setText(note.noteDetail)
     }
 }
