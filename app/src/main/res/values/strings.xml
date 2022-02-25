@@ -5,7 +5,7 @@
     <string name="update">Update</string>
     <string name="add_note">Add Note</string>
     <string name="note_text">Note Text</string>
-    <string name="id">Id</string>
+    <string name="id">Id (Auto Generated)</string>
     <string name="list_of_all_notes">List of all notes</string>
     <string name="notes_content">Notes Content</string>
     <!-- TODO: Remove or change this placeholder text -->

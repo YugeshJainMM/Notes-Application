@@ -4,10 +4,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.activity_main.view.*
 
-class NoteAdapter(private val noteList: ArrayList<Note>): RecyclerView.Adapter<NoteAdapter.ViewHolder>() {
+class NoteAdapter(private val noteList: ArrayList<Note>): ListAdapter<Note, NoteAdapter.ViewHolder>(DiffUtil()) {
 
     private lateinit var mListener: RecyclerViewClickListener
 
@@ -35,5 +36,15 @@ class NoteAdapter(private val noteList: ArrayList<Note>): RecyclerView.Adapter<N
 
     class ViewHolder(itemView : View, listener: RecyclerViewClickListener): RecyclerView.ViewHolder(itemView) {
         val noteDetail : TextView = itemView.findViewById(R.id.notesContent)
+    }
+
+    class DiffUtil : androidx.recyclerview.widget.DiffUtil.ItemCallback<Note>() {
+        override fun areItemsTheSame(oldItem: Note, newItem: Note): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: Note, newItem: Note): Boolean {
+            return oldItem == newItem
+        }
     }
 }

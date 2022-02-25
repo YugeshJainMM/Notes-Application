@@ -4,6 +4,8 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.database.FirebaseDatabase
@@ -36,32 +38,33 @@ class MainActivity : AppCompatActivity() {
         adapter = NoteAdapter(noteArrayList)
         recyclerView.adapter = adapter
 
+
         adapter.setOnItemClickListener(object : RecyclerViewClickListener{
             override fun onRecyclerViewItemClicked(note: Note) {
                 inputNotesId.setText(note.id)
                 inputNotesText.setText(note.noteDetail)
-//                Toast.makeText(this@MainActivity, "You clicked on ${note.id} item", Toast.LENGTH_SHORT).show()
             }
         })
-
 
         buttonAddNote.setOnClickListener {
             val noteDetail = inputNotesText.text.toString()
             val noteId = dbNotes.push().key
             val note = Note(noteDetail, noteId)
             saveNotes(note)
+            adapter.submitList(noteArrayList)
             inputNotesText.setText("")
             inputNotesId.setText("")
         }
 
         buttonUpdate.setOnClickListener {
-
+            val oldNote = getOldNote()
+            val newNoteMap = getNewNoteMap()
+            updateNote(oldNote, newNoteMap)
         }
 
         buttonDelete.setOnClickListener {
             val note = getOldNote()
             deleteNote(note)
-//            noteArrayList.removeAt()
         }
 
         realtimeUpdates()
@@ -82,13 +85,15 @@ class MainActivity : AppCompatActivity() {
                     Log.e("Firestore Error", error.message.toString())
                     return
                 }
-                for (dc: DocumentChange in value?.documentChanges!!) {
-                    if (dc.type == DocumentChange.Type.ADDED) {
-//                        val doc = dc.document.id
-                        noteArrayList.add(dc.document.toObject(Note::class.java))
+                noteArrayList.clear()
+                value?.let{
+                    for (dc: DocumentChange in value.documentChanges) {
+                        if (dc.type == DocumentChange.Type.ADDED) {
+                            noteArrayList.add(dc.document.toObject(Note::class.java))
+                        }
                     }
                 }
-                adapter.notifyDataSetChanged()
+                adapter.submitList(noteArrayList)
             }
         })
     }
@@ -105,7 +110,6 @@ class MainActivity : AppCompatActivity() {
                     val note = document.toObject<Note>()
                     stringBuilder.append("$note\n")
                 }
-                //noteData.text = stringBuilder.toString()
             }
         }
     }
@@ -124,8 +128,40 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateNote(note: Note){
+    private fun getNewNoteMap(): Map<String, Any> {
+        val noteDetail = inputNotesText.text.toString()
+        val map = mutableMapOf<String, Any>()
+        if(noteDetail.isNotEmpty()) {
+            map["noteDetail"] = noteDetail
+        }
+        return map
+    }
 
+    private fun updateNote(note: Note, newNoteMap: Map<String, Any>) = CoroutineScope(Dispatchers.IO).launch {
+        val personQuery = noteCollectionRef
+            .whereEqualTo("id", note.id)
+            .get()
+            .await()
+        if(personQuery.documents.isNotEmpty()) {
+            for(document in personQuery) {
+                try {
+                    noteCollectionRef.document(document.id).set(
+                        newNoteMap,
+                        SetOptions.merge()
+                    ).await()
+                    eventChangeListner()
+                    Toast.makeText(this@MainActivity, "Updated Successfully", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        } else {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@MainActivity, "No notes matched the query.", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun deleteNote(note: Note) = CoroutineScope(Dispatchers.IO).launch {
@@ -139,6 +175,7 @@ class MainActivity : AppCompatActivity() {
                 try {
                     noteCollectionRef.document(document.id).delete().await()
                     withContext(Dispatchers.Main) {
+                        eventChangeListner()
                         Toast.makeText(this@MainActivity, "Deleted Successfully", Toast.LENGTH_LONG).show()
                     }
                 } catch (e: Exception) {
